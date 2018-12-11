@@ -1,0 +1,8 @@
+.page-layout {
+    padding-top: 30px;
+    .media {
+        &:not(:last-child) {
+            margin-top: 10px;
+        }
+    }
+}
