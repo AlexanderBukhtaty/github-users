@@ -14,7 +14,7 @@ export class AppComponent {
     pagination: {
       page: 1,
       perPage: 10,
-      totalPage: 0
+      totalItems: 0
     }
   };
 
@@ -36,7 +36,7 @@ export class AppComponent {
       .set('per_page', this.state.pagination.perPage.toString());
     this.githubUsersService.search(params).toPromise().then((response) => {
       this.users = response.items;
-      this.state.pagination.totalPage = response.total_count;
+      this.state.pagination.totalItems = response.total_count;
       this.state.loading = false;
     })    
   }

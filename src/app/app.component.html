@@ -26,7 +26,7 @@
       <div class="text-center">Loading...</div>
     </ng-template>
     <div class="d-flex justify-content-center">
-      <app-pagination [page]="state.pagination.page" [perPage]="state.pagination.perPage" [totalPage]="state.pagination.totalPage" (onChangePage)="onChangePage($event)"></app-pagination>
+      <app-pagination [page]="state.pagination.page" [perPage]="state.pagination.perPage" [totalItems]="state.pagination.totalItems" (onChangePage)="onChangePage($event)"></app-pagination>
     </div>
   </div>
 </div>

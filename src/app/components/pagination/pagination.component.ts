@@ -9,7 +9,7 @@ export class PaginationComponent implements OnInit {
   
   @Input()
   set page(v: number) {
-    if (this._page !== v && v >= 1 && v <= Math.ceil(this.totalPage / this.perPage)) {
+    if (this._page !== v && v >= 1 && v <= Math.ceil(this.totalItems / this.perPage)) {
       this._page = v;
     }
   }
@@ -18,7 +18,7 @@ export class PaginationComponent implements OnInit {
   }
   private _page: number = 1;  
   @Input() perPage: number = 1;
-  @Input() totalPage: number = 1;
+  @Input() totalItems: number = 1;
   @Output() onChangePage: EventEmitter<number> = new EventEmitter();
 
   constructor() { }
@@ -27,16 +27,22 @@ export class PaginationComponent implements OnInit {
   }
   
   getTotalPages() {
-    return Math.ceil(this.totalPage / this.perPage);
+    return Math.ceil(this.totalItems / this.perPage);
   }
   
   previous(e: MouseEvent) {
     e.preventDefault();
+    if (this.page <= 1) {
+      return;
+    }
     this.onChangePage.emit(--this.page)
   }
 
   next(e: MouseEvent) {
     e.preventDefault();
+    if (this.page >= this.getTotalPages()) {
+      return;
+    }
     this.onChangePage.emit(++this.page)
   }
 
