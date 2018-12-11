@@ -10,7 +10,12 @@ import { GithubUsersService } from '@app/services/github-users.service';
 export class AppComponent {
   
   public state = {
-    loading: false
+    loading: false,
+    pagination: {
+      page: 1,
+      perPage: 10,
+      totalPage: 0
+    }
   };
 
   public form = {
@@ -21,19 +26,27 @@ export class AppComponent {
   
   constructor(
     private githubUsersService: GithubUsersService
-  ) {
+  ) {}
 
-  }
-  
-  onSubmitForm() {
+  loadData() {
     this.state.loading = true;
     let params = new HttpParams()
-    .set('q',this.form.term)
-    .set('page', '1')
-    .set('per_page', '10');
+      .set('q', this.form.term)
+      .set('page', this.state.pagination.page.toString())
+      .set('per_page', this.state.pagination.perPage.toString());
     this.githubUsersService.search(params).toPromise().then((response) => {
       this.users = response.items;
+      this.state.pagination.totalPage = response.total_count;
       this.state.loading = false;
-    })
+    })    
+  }
+
+  onSubmitForm() {
+    this.loadData()
+  }
+
+  onChangePage(page: number) {
+    this.state.pagination.page = page;
+    this.loadData()
   }
 }
