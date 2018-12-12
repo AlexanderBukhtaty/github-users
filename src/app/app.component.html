@@ -1,32 +1,41 @@
 <div class="page-layout">
   <div class="container">
-    <div class="input-group mb-3">
-      <input [(ngModel)]="form.term" type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="button-addon2">
-      <div class="input-group-append">
-        <button class="btn btn-outline-primary" type="button" (click)="onSubmitForm()">Button</button>
+    <form #form="ngForm" [formGroup]="searchForm" (ngSubmit)="onSubmitForm()">
+      <div class="input-group mb-3">
+        <input formControlName="term"  type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="button-addon2">
+        <div class="input-group-append">
+          <button class="btn btn-outline-primary" [ngClass]="{'disabled': state.loading}" type="submit">Button</button>
+        </div>
       </div>
-    </div>
+      <div *ngIf="searchForm.controls['term'].invalid && (searchForm.controls['term'].dirty || searchForm.controls['term'].touched)" class="alert alert-danger">
+        <div *ngIf="searchForm.controls['term'].errors.required">
+          Term is required.
+        </div>
+      </div>
+    </form>
     <ng-container *ngIf="!state.loading; else loadingTpl">
-      <ul class="list-unstyled">
-        <ng-container *ngIf="users?.length; else emptyListTpl">
+      <ng-container *ngIf="users?.length; else emptyListTpl">
+        <ul class="list-unstyled">
           <li class="media" *ngFor="let user of users">
-            <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}" alt="Generic placeholder image">
+            <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
+              alt="Generic placeholder image">
             <div class="media-body">
               <h5 class="mt-0 mb-1">{{ user.login }}</h5>
               <a href="{{ user.html_url }}" target="blank">{{ user.html_url }}</a>
             </div>
           </li>
-        </ng-container>
-        <ng-template #emptyListTpl>
-          <div class="text-center">List is empty</div>
-        </ng-template>
-      </ul>
+        </ul>
+      </ng-container>
+      <ng-template #emptyListTpl>
+        <div class="text-center">List is empty</div>
+      </ng-template>
     </ng-container>
     <ng-template #loadingTpl>
       <div class="text-center">Loading...</div>
     </ng-template>
-    <div class="d-flex justify-content-center">
-      <app-pagination [page]="state.pagination.page" [perPage]="state.pagination.perPage" [totalItems]="state.pagination.totalItems" (onChangePage)="onChangePage($event)"></app-pagination>
+    <div class="d-flex justify-content-center" *ngIf="!state.loading && users?.length">
+      <app-pagination [page]="state.pagination.page" [perPage]="state.pagination.perPage" [totalItems]="state.pagination.totalItems"
+        (onChangePage)="onChangePage($event)"></app-pagination>
     </div>
   </div>
 </div>

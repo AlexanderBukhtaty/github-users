@@ -16,7 +16,7 @@ export class GithubUsersService {
   constructor(
     private httpClient: HttpClient
   ) {}
-
+  
   search(params: HttpParams): Observable<IQueryResponse<any>>{
     return this.httpClient.get<IQueryResponse<any>>('http://api.github.com/search/users', {params});
   }
