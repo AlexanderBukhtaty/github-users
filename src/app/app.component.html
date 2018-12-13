@@ -13,10 +13,16 @@
         </div>
       </div>
     </form>
-    <ng-container *ngIf="!(loading$ | async); else loadingTpl">
-      <ng-container *ngIf="(users$ | async)?.length; else emptyListTpl">
+
+    <!-- Косяк с вложенными асинхронными переменными-->
+    <ng-container *ngIf="loading$ | async">
+      <div class="text-center">Loading...</div>
+    </ng-container>
+    
+    <ng-container *ngIf="users$ | async as users">
+      <ng-container *ngIf="users.length; else emptyListTpl">
         <ul class="list-unstyled">
-          <li class="media" *ngFor="let user of users$ | async">
+          <li class="media" *ngFor="let user of users">
             <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
               alt="Generic placeholder image">
             <div class="media-body">
@@ -25,19 +31,15 @@
             </div>
           </li>
         </ul>
+        <div class="d-flex justify-content-center" *ngIf="(pagination$ | async) as pagination">
+          <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
+            (onChangePage)="onChangePage($event)"></app-pagination>
+        </div>
       </ng-container>
       <ng-template #emptyListTpl>
         <div class="text-center">List is empty</div>
-      </ng-template>
+      </ng-template>      
     </ng-container>
-    <ng-template #loadingTpl>
-      <div class="text-center">Loading...</div>
-    </ng-template>
-    <ng-container *ngIf="!(loading$ | async) && (users$ | async)?.length && pagination$ | async as pagination">
-      <div class="d-flex justify-content-center">
-        <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
-          (onChangePage)="onChangePage($event)"></app-pagination>
-      </div>
-    </ng-container>
+
   </div>
 </div>

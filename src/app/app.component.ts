@@ -2,8 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 import { GithubUsersService } from '@app/services/github-users.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
-import { map, tap, distinctUntilChanged, filter, switchMap,  } from 'rxjs/operators';
+import { BehaviorSubject, Observable, combineLatest, empty } from 'rxjs';
+import { map, tap, distinctUntilChanged, filter, switchMap, catchError, share  } from 'rxjs/operators';
 
 interface IPagination {
   page: number;
@@ -53,10 +53,10 @@ export class AppComponent implements OnInit {
     this.pagination$$ = new BehaviorSubject(DEFAULT_PAGINATION);
     this.submittingForm$ = this.submittingForm$$.asObservable();
     this.pagination$ = this.pagination$$.asObservable();
-
+    
     this.users$ = combineLatest(
-      this.submittingForm$$,
-      this.pagination$$.pipe(distinctUntilChanged((prev, next) => {
+      this.submittingForm$,
+      this.pagination$.pipe(distinctUntilChanged((prev, next) => {
         return prev.page === next.page && prev.perPage === next.perPage;
       }))
       ).pipe(
@@ -71,15 +71,20 @@ export class AppComponent implements OnInit {
               this.loading$$.next(false);
               this.pagination$$.next({ ...this.pagination$$.value, totalItems: result.total_count});
             }),
-            map(result => result.items)
+            map(result => result.items),
+            catchError((err, caught) => {
+              console.log('ERROR: ', err.error.message);
+              return empty();
+            })
           );
-        })
+        }),
+        share()
     );
+    
   }
 
   onSubmitForm() {
     this.loading$$.next(true);
-    this.pagination$$.next(DEFAULT_PAGINATION);
     this.submittingForm$$.next(this.searchForm);
   }
 
