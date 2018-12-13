@@ -4,7 +4,7 @@
       <div class="input-group mb-3">
         <input formControlName="term"  type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="button-addon2">
         <div class="input-group-append">
-          <button class="btn btn-outline-primary" [ngClass]="{'disabled': state.loading}" type="submit">Button</button>
+          <button class="btn btn-outline-primary" [ngClass]="{'disabled': (loading$ | async)}" type="submit">Button</button>
         </div>
       </div>
       <div *ngIf="searchForm.controls['term'].invalid && (searchForm.controls['term'].dirty || searchForm.controls['term'].touched)" class="alert alert-danger">
@@ -13,10 +13,10 @@
         </div>
       </div>
     </form>
-    <ng-container *ngIf="!state.loading; else loadingTpl">
-      <ng-container *ngIf="users?.length; else emptyListTpl">
+    <ng-container *ngIf="!(loading$ | async); else loadingTpl">
+      <ng-container *ngIf="(users$ | async)?.length; else emptyListTpl">
         <ul class="list-unstyled">
-          <li class="media" *ngFor="let user of users">
+          <li class="media" *ngFor="let user of users$ | async">
             <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
               alt="Generic placeholder image">
             <div class="media-body">
@@ -33,9 +33,11 @@
     <ng-template #loadingTpl>
       <div class="text-center">Loading...</div>
     </ng-template>
-    <div class="d-flex justify-content-center" *ngIf="!state.loading && users?.length">
-      <app-pagination [page]="state.pagination.page" [perPage]="state.pagination.perPage" [totalItems]="state.pagination.totalItems"
-        (onChangePage)="onChangePage($event)"></app-pagination>
-    </div>
+    <ng-container *ngIf="!(loading$ | async) && (users$ | async)?.length && pagination$ | async as pagination">
+      <div class="d-flex justify-content-center">
+        <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
+          (onChangePage)="onChangePage($event)"></app-pagination>
+      </div>
+    </ng-container>
   </div>
 </div>
