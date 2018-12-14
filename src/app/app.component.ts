@@ -3,8 +3,8 @@ import { HttpParams } from '@angular/common/http';
 import { GithubUsersService, IGitHubUser } from '@app/services/github-users.service';
 import { IPagination, DEFAULT_PAGINATION } from '@app/components/pagination/pagination.component';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Observable, empty } from 'rxjs';
-import { map, tap, distinctUntilChanged, filter, switchMap, catchError, share, takeWhile, skipWhile, startWith, combineLatest  } from 'rxjs/operators';
+import { BehaviorSubject, Subject, Observable, empty } from 'rxjs';
+import { map, filter, switchMap, catchError, startWith } from 'rxjs/operators';
 
 enum STATES {
   READY = 'READY',
@@ -42,7 +42,7 @@ export class AppComponent implements OnInit {
   public submittingForm$: Observable<FormGroup> = this.submittingForm$$.asObservable();
   
   // Поток изменения значения пагинации
-  private pagination$$: BehaviorSubject<IPagination> = new BehaviorSubject(DEFAULT_PAGINATION);
+  private pagination$$: Subject<IPagination> = new Subject();
   public pagination$: Observable<IPagination> = this.pagination$$.asObservable();
   
   constructor(
@@ -59,19 +59,16 @@ export class AppComponent implements OnInit {
     this.submittingForm$.pipe(
       filter( form => form.valid),
       switchMap((form) => this.pagination$.pipe(
-        startWith(DEFAULT_PAGINATION),
-        map((pagination) => ({ form, pagination}))
+        startWith({...DEFAULT_PAGINATION}),
+        switchMap( pagination => this.search(form, pagination))
       )),
-      switchMap(({ form, pagination }) => this.search(form, pagination)),
     ).subscribe((dataState) => this.dataState$$.next(dataState))
-
   }
   
   /**
    * Метод с логикой поиска
    */
   search (form: FormGroup, pagination: IPagination): Observable<IData> {
-
     let params = new HttpParams()
       .set('q', form.value.term)
       .set('page', pagination.page.toString())
@@ -83,7 +80,7 @@ export class AppComponent implements OnInit {
           state: STATES.READY,
           data: {
             users: result.items,
-            pagination: { ...this.pagination$$.value, totalItems: result.total_count }
+            pagination: { ...pagination, totalItems: result.total_count }
           }
         }
       }),
@@ -108,9 +105,12 @@ export class AppComponent implements OnInit {
 
   onChangePage(page: number): void {
     this.dataState$$.next({ state: STATES.LOADING, data: {} });
-    this.pagination$$.next({ 
-      ...this.pagination$$.value,
-      page: page
+    this.pagination$$.next({
+      ...DEFAULT_PAGINATION,
+      page: page,
     });
   }
+
 }
+
+// BehaviourSubject = Subject + startWith
