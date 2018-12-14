@@ -1,5 +1,17 @@
 import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 
+export interface IPagination {
+  page: number;
+  perPage: number;
+  totalItems: number;
+}
+
+export const DEFAULT_PAGINATION: IPagination = {
+  page: 1,
+  perPage: 10,
+  totalItems: 0
+};
+
 @Component({
   selector: 'app-pagination',
   templateUrl: './pagination.component.html',
@@ -19,8 +31,14 @@ export class PaginationComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this._page !== changes.page.currentValue && changes.page.currentValue >= 1 && changes.page.currentValue <= this.getTotalPages()) {
-      this._page = changes.page.currentValue;
+    if (changes.page) {
+      if (
+        this._page !== changes.page.currentValue &&
+        changes.page.currentValue >= 1 &&
+        changes.page.currentValue <= this.getTotalPages()
+      ) {
+        this._page = changes.page.currentValue;
+      }
     }
   }
   

@@ -1,50 +1,56 @@
 <div class="page-layout">
-  <div class="container">
-    <form #form="ngForm" [formGroup]="searchForm" (ngSubmit)="onSubmitForm()">
-      <div class="input-group mb-3">
-        <input formControlName="term"  type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="button-addon2">
-        <div class="input-group-append">
-          <button class="btn btn-outline-primary" [ngClass]="{'disabled': (loading$ | async)}" type="submit">Button</button>
+  <ng-container *ngIf="dataState$ | async as dataState">
+    <div class="container">
+      <form #form="ngForm" [formGroup]="searchForm" (ngSubmit)="onSubmitForm()">
+        <div class="input-group mb-3">
+          <input formControlName="term" type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username"
+            aria-describedby="button-addon2">
+          <div class="input-group-append">
+            <button class="btn btn-outline-primary" [ngClass]="{'disabled': dataState.state == 'LOADING'}" type="submit">Button</button>
+          </div>
         </div>
-      </div>
-      <div *ngIf="searchForm.controls['term'].invalid && (searchForm.controls['term'].dirty || searchForm.controls['term'].touched)" class="alert alert-danger">
-        <div *ngIf="searchForm.controls['term'].errors.required">
-          Term is required.
+        <div *ngIf="searchForm.controls['term'].invalid && (searchForm.controls['term'].dirty || searchForm.controls['term'].touched)"
+          class="alert alert-danger">
+          <div *ngIf="searchForm.controls['term'].errors.required">
+            Term is required.
+          </div>
         </div>
-      </div>
-    </form>
-
-    <!-- Косяк с вложенными асинхронными переменными-->
-    <ng-container *ngIf="loading$ | async">
-      <div class="text-center">Loading...</div>
-    </ng-container>
-    
-    <ng-container *ngIf="users$ | async as users">
+      </form>
       
-      <ng-container *ngIf="users.length; else emptyListTpl">
-      
-        <ul class="list-unstyled">
-          <li class="media" *ngFor="let user of users">
-            <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
-              alt="Generic placeholder image">
-            <div class="media-body">
-              <h5 class="mt-0 mb-1">{{ user.login }}</h5>
-              <a href="{{ user.html_url }}" target="blank">{{ user.html_url }}</a>
-            </div>
-          </li>
-        </ul>
-      
-        <div class="d-flex justify-content-center" *ngIf="(pagination$ | async) as pagination">
-          <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
-            (onChangePage)="onChangePage($event)"></app-pagination>
-        </div>
-      
+      <ng-container *ngIf="dataState.state == 'LOADING'">
+        <div class="text-center">Loading...</div>
       </ng-container>
 
-      <ng-template #emptyListTpl>
-        <div class="text-center">List is empty</div>
-      </ng-template>      
-    </ng-container>
+      <ng-container *ngIf="dataState.state == 'READY'">
+        <ng-container *ngIf=" dataState.data.users && dataState.data.users.length; else emptyListTpl">
+        
+          <ul class="list-unstyled">
+            <li class="media" *ngFor="let user of dataState.data.users">
+              <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
+                alt="Generic placeholder image">
+              <div class="media-body">
+                <h5 class="mt-0 mb-1">{{ user.login }}</h5>
+                <a href="{{ user.html_url }}" target="blank">{{ user.html_url }}</a>
+              </div>
+            </li>
+          </ul>
+        
+          <div class="d-flex justify-content-center" *ngIf="dataState.data.pagination as pagination">
+            <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
+              (onChangePage)="onChangePage($event)"></app-pagination>
+          </div>
+        
+        </ng-container>
+  
+        <ng-template #emptyListTpl>
+          <div class="text-center">List is empty</div>
+        </ng-template>
+      </ng-container>
 
-  </div>
+      <ng-container *ngIf="dataState.state == 'ERROR'">
+        <div class="text-center">Something went wrong!</div>
+      </ng-container>
+
+    </div>
+  </ng-container>
 </div>
