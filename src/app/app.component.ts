@@ -3,7 +3,7 @@ import { HttpParams } from '@angular/common/http';
 import { GithubUsersService } from '@app/services/github-users.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { BehaviorSubject, Observable, combineLatest, empty } from 'rxjs';
-import { map, tap, distinctUntilChanged, filter, switchMap, catchError, share  } from 'rxjs/operators';
+import { map, tap, distinctUntilChanged, filter, switchMap, catchError, share, takeWhile, skipWhile  } from 'rxjs/operators';
 
 interface IPagination {
   page: number;
@@ -24,18 +24,20 @@ const DEFAULT_PAGINATION: IPagination = {
 })
 export class AppComponent implements OnInit {
   
-  public searchForm: FormGroup;
+  public searchForm: FormGroup = this.formBuilder.group({
+    term: ['', Validators.required]
+  });;
 
   public users$: Observable<Array<any>>;
 
   private loading$$: BehaviorSubject<boolean> = new BehaviorSubject(false);
   public loading$: Observable<boolean> = this.loading$$.asObservable();
   
-  private submittingForm$$: BehaviorSubject<FormGroup>;
-  public submittingForm$: Observable<FormGroup>;
+  private submittingForm$$: BehaviorSubject<FormGroup> = new BehaviorSubject(this.searchForm);
+  public submittingForm$: Observable<FormGroup> = this.submittingForm$$.asObservable();
   
-  private pagination$$: BehaviorSubject<IPagination>;
-  public pagination$: Observable<IPagination>;
+  private pagination$$: BehaviorSubject<IPagination> = new BehaviorSubject(DEFAULT_PAGINATION);
+  public pagination$: Observable<IPagination> = this.pagination$$.asObservable();
   
   constructor(
     private githubUsersService: GithubUsersService,
@@ -45,15 +47,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit () {
     
-    this.searchForm = this.formBuilder.group({
-      term: ['', Validators.required]
-    });
-
-    this.submittingForm$$ = new BehaviorSubject(this.searchForm);
-    this.pagination$$ = new BehaviorSubject(DEFAULT_PAGINATION);
-    this.submittingForm$ = this.submittingForm$$.asObservable();
-    this.pagination$ = this.pagination$$.asObservable();
-    
     this.users$ = combineLatest(
       this.submittingForm$,
       this.pagination$.pipe(distinctUntilChanged((prev, next) => {
@@ -62,10 +55,12 @@ export class AppComponent implements OnInit {
       ).pipe(
         filter(([form, pagination]) => form.valid),
         switchMap(([form, pagination]) => {
+          
           let params = new HttpParams()
             .set('q', form.value.term)
             .set('page', pagination.page.toString())
             .set('per_page', pagination.perPage.toString());
+          
           return this.githubUsersService.search(params).pipe(
             tap(result => {
               this.loading$$.next(false);
@@ -77,6 +72,7 @@ export class AppComponent implements OnInit {
               return empty();
             })
           );
+
         }),
         share()
     );

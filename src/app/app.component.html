@@ -20,7 +20,9 @@
     </ng-container>
     
     <ng-container *ngIf="users$ | async as users">
+      
       <ng-container *ngIf="users.length; else emptyListTpl">
+      
         <ul class="list-unstyled">
           <li class="media" *ngFor="let user of users">
             <img class="mr-3" style="width:64px; height: 64px; background-color: #dedede;" src="{{ user.avatar_url }}"
@@ -31,11 +33,14 @@
             </div>
           </li>
         </ul>
+      
         <div class="d-flex justify-content-center" *ngIf="(pagination$ | async) as pagination">
           <app-pagination [page]="pagination.page" [perPage]="pagination.perPage" [totalItems]="pagination.totalItems"
             (onChangePage)="onChangePage($event)"></app-pagination>
         </div>
+      
       </ng-container>
+
       <ng-template #emptyListTpl>
         <div class="text-center">List is empty</div>
       </ng-template>      
