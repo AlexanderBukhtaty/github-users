@@ -3,8 +3,8 @@ import { HttpParams } from '@angular/common/http';
 import { GithubUsersService, IGitHubUser } from '@app/services/github-users.service';
 import { IPagination, DEFAULT_PAGINATION } from '@app/components/pagination/pagination.component';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Subject, Observable, empty } from 'rxjs';
-import { map, filter, switchMap, catchError, startWith } from 'rxjs/operators';
+import { BehaviorSubject, Subject, Observable, throwError, empty } from 'rxjs';
+import { map, filter, switchMap, catchError, startWith, debounceTime } from 'rxjs/operators';
 
 enum STATES {
   READY = 'READY',
@@ -28,7 +28,6 @@ export class AppComponent implements OnInit {
   public searchForm: FormGroup = this.formBuilder.group({
     term: ['', Validators.required]
   });;
-
   
   // Список пользователей
   public users$: Observable<Array<any>>;
@@ -44,6 +43,7 @@ export class AppComponent implements OnInit {
   // Поток изменения значения пагинации
   private pagination$$: Subject<IPagination> = new Subject();
   public pagination$: Observable<IPagination> = this.pagination$$.asObservable();
+  
   
   constructor(
     private githubUsersService: GithubUsersService,
@@ -62,8 +62,12 @@ export class AppComponent implements OnInit {
         startWith({...DEFAULT_PAGINATION}),
         switchMap( pagination => this.search(form, pagination))
       )),
-    ).subscribe((dataState) => this.dataState$$.next(dataState))
+    ).subscribe(
+      (dataState) => this.dataState$$.next(dataState),
+      (err) => this.dataState$$.next(this._createState(STATES.ERROR, err))
+    )
   }
+  
   
   /**
    * Метод с логикой поиска
@@ -76,41 +80,41 @@ export class AppComponent implements OnInit {
 
     return this.githubUsersService.search(params).pipe(
       map(result => {
-        return { 
-          state: STATES.READY,
-          data: {
-            users: result.items,
-            pagination: { ...pagination, totalItems: result.total_count }
-          }
-        }
+        let data = {
+          users: result.items,
+          pagination: { ...pagination, totalItems: result.total_count }
+        };
+        return this._createState(STATES.READY, data);
       }),
-      catchError((err, caught) => {
-        this.dataState$$.next({
-          state: STATES.ERROR,
-          data: {}
-        });
-        console.log('ERROR: ', err.error.message);
-        return empty();
+      catchError((error) => {
+        return throwError(error);
       })
     );    
 
   }
 
-
+  
+  // Обработка отправки формы
   onSubmitForm(): void {
-    this.dataState$$.next({ state: STATES.LOADING, data: {} });
+    this.dataState$$.next(this._createState(STATES.LOADING));
     this.submittingForm$$.next(this.searchForm);
   }
 
-
+  
+  // Обработка изменения страницы
   onChangePage(page: number): void {
-    this.dataState$$.next({ state: STATES.LOADING, data: {} });
-    this.pagination$$.next({
-      ...DEFAULT_PAGINATION,
-      page: page,
-    });
+    this.dataState$$.next(this._createState(STATES.LOADING));
+    this.pagination$$.next({ ...DEFAULT_PAGINATION, page: page });
   }
+  
 
+  // Метод генерации стейта
+  private _createState(stateCode: STATES, data?: any): IData {
+    return { 
+      state: stateCode, 
+      data: data ? data : {}
+    };
+  }
 }
 
 // BehaviourSubject = Subject + startWith
