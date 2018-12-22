@@ -29,12 +29,7 @@ export class AppComponent implements OnInit {
     term: ['', Validators.required]
   });;
   
-  // Список пользователей
-  public users$: Observable<Array<any>>;
-  
   // Состояние компонента
-  // private dataState$$: BehaviorSubject<IData> = new BehaviorSubject({ state: STATES.READY, data: {} });
-  // public dataState$: Observable<IData> = this.dataState$$.asObservable();
   private dataState$$: Subject<IData> = new Subject();
   public dataState$: Observable<IData>;
 
@@ -79,7 +74,7 @@ export class AppComponent implements OnInit {
    */
   search (form: FormGroup, pagination: IPagination): Observable<IData> {
     
-    this.dataState$$.next(this._createState(STATES.LOADING));
+    this.dataState$$.next(this._createState(STATES.LOADING));             // Уведомляем что начинаем загрузку
     
     let params = new HttpParams()
       .set('q', form.value.term)
@@ -94,9 +89,7 @@ export class AppComponent implements OnInit {
         };
         return this._createState(STATES.READY, data);
       }),
-      catchError((error) => {
-        return throwError(error);
-      })
+      catchError((error) => throwError(error))
     );    
 
   }
