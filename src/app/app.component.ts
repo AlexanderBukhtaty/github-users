@@ -1,10 +1,10 @@
-import { Component, OnInit } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
-import { GithubUsersService, IGitHubUser } from '@app/services/github-users.service';
-import { IPagination, DEFAULT_PAGINATION } from '@app/components/pagination/pagination.component';
-import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Subject, Observable, throwError, empty } from 'rxjs';
-import { map, filter, switchMap, catchError, startWith, debounceTime } from 'rxjs/operators';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { DEFAULT_PAGINATION, IPagination } from '@app/components/pagination/pagination.component';
+import { GithubUsersService } from '@app/services/github-users.service';
+import { BehaviorSubject, Observable, Subject, throwError, of, merge } from 'rxjs';
+import { catchError, filter, map, startWith, switchMap, tap } from 'rxjs/operators';
 
 enum STATES {
   READY = 'READY',
@@ -33,9 +33,11 @@ export class AppComponent implements OnInit {
   public users$: Observable<Array<any>>;
   
   // Состояние компонента
-  private dataState$$: BehaviorSubject<IData> = new BehaviorSubject({ state: STATES.READY, data: {} });
-  public dataState$: Observable<IData> = this.dataState$$.asObservable();  
-  
+  // private dataState$$: BehaviorSubject<IData> = new BehaviorSubject({ state: STATES.READY, data: {} });
+  // public dataState$: Observable<IData> = this.dataState$$.asObservable();
+  private dataState$$: Subject<IData> = new Subject();
+  public dataState$: Observable<IData>;
+
   // Потом отправки формы
   private submittingForm$$: BehaviorSubject<FormGroup> = new BehaviorSubject(this.searchForm);
   public submittingForm$: Observable<FormGroup> = this.submittingForm$$.asObservable();
@@ -56,16 +58,19 @@ export class AppComponent implements OnInit {
     /**
      * Логика обновления списка пользователей
      */
-    this.submittingForm$.pipe(
-      filter( form => form.valid),
-      switchMap((form) => this.pagination$.pipe(
-        startWith({...DEFAULT_PAGINATION}),
-        switchMap( pagination => this.search(form, pagination))
-      )),
-    ).subscribe(
-      (dataState) => this.dataState$$.next(dataState),
-      (err) => this.dataState$$.next(this._createState(STATES.ERROR, err))
-    )
+    this.dataState$ = merge(
+      this.dataState$$.asObservable().pipe(startWith({ state: STATES.READY, data: {} })),
+      this.submittingForm$.pipe(
+        filter(form => form.valid),
+        switchMap((form) => this.pagination$.pipe(
+          startWith({ ...DEFAULT_PAGINATION }),
+          switchMap(pagination => this.search(form, pagination))
+        ))
+      )
+    ).pipe(
+      catchError(err => of(this._createState(STATES.ERROR, err)))
+    );
+
   }
   
   
@@ -73,6 +78,9 @@ export class AppComponent implements OnInit {
    * Метод с логикой поиска
    */
   search (form: FormGroup, pagination: IPagination): Observable<IData> {
+    
+    this.dataState$$.next(this._createState(STATES.LOADING));
+    
     let params = new HttpParams()
       .set('q', form.value.term)
       .set('page', pagination.page.toString())
@@ -96,14 +104,12 @@ export class AppComponent implements OnInit {
   
   // Обработка отправки формы
   onSubmitForm(): void {
-    this.dataState$$.next(this._createState(STATES.LOADING));
     this.submittingForm$$.next(this.searchForm);
   }
 
   
   // Обработка изменения страницы
   onChangePage(page: number): void {
-    this.dataState$$.next(this._createState(STATES.LOADING));
     this.pagination$$.next({ ...DEFAULT_PAGINATION, page: page });
   }
   
@@ -112,7 +118,7 @@ export class AppComponent implements OnInit {
   private _createState(stateCode: STATES, data?: any): IData {
     return { 
       state: stateCode, 
-      data: data ? data : {}
+      data: data ? data : null
     };
   }
 }
